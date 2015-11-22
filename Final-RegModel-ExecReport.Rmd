@@ -1,0 +1,156 @@
+---
+title: "Exploring MPG and transmission type"
+author: "K. Kurttila - November 19, 2015"
+output: pdf_document
+fontsize: 9pt
+fontfamily: arev
+geometry: margin=.5in
+fig_width: 7.5
+---
+
+```{r loadlibraries, echo=FALSE}
+library(knitr) # for pdf creation
+library(ggplot2) # for graphing
+library(datasets) # for managing dataset
+library(broman)
+```
+## Executive Summary ##
+
+In this report, we will utilize the dataset (mtcars) from the 1974 Motor Trend magazine, to analyze the difference between automatic and manual transmissions with regards to miles per gallon (MPG). 
+
+Our focus:
+
+1. Is an automatic or manual transmission better for MPG?
+2. Quantify the MPG difference between automatic and manual transmissions.
+
+After performing exploratory data analysis, and using hypothesis testing and regression models, our multivariate model, accounting for the major confounders of weight, quantity of cylinders, and horsepower, show that cars with manual transmissions average 1.81 MPG more than cars with an automatic transmission, however, our p-value is greater than .05, indicating these results are not statistically significant and could be due to chance. 
+
+## Data Processing ##
+We load the dataset and convert the necessary variables to factors for analysis.
+```{r loaddata, echo=FALSE}
+data(mtcars)
+mtcars$cyl <- factor(mtcars$cyl)
+mtcars$vs <- factor(mtcars$vs)
+mtcars$gear <- factor(mtcars$gear)
+mtcars$carb <- factor(mtcars$carb)
+mtcars$am <- factor(mtcars$am,labels=c('Automatic','Manual'))
+```
+
+Our data is comprised of the following variables with regard to 32 cars from the 1973-74 model years:
+
+**Variables:**
+**mpg** - Miles/(US) gallon,
+**cyl** - Number of cylinders,
+**disp** - Displacement (cu.in.),
+**hp** - Gross horsepower,
+**drat** - Rear axle ratio,
+**wt** - Weight (lb/1000),
+**qsec** - 1/4 mile time,
+**vs** - V/S,
+**am** - Transmission,
+**gear** - Number of forward gears,
+**car** - Number of carburetors
+
+See **Appendix; Figure 1** for a sampling of the first 6 rows of the data (each row is the observation of one car model).
+
+
+## Exploratory analysis##
+The quickest way to conduct exploratory analysis is graphically. First, a simple boxplot (**Appendix; Figure 2**) for visual analysis of the data for transmission type (am) with regards to MPG (mpg) indicate a significant difference in mean values based on transmission type. A pairs plot for each factor level comapred to all others (**Appendix; Figure 3**) provides some insight into which factors could be confounders. By utilizing conditioning plots (**Appendix; Figures 4 a-c**) focusing on MPG, given transmission, with regards to cyl, hp, and wt, respectively, as confounders we can easily see a multivariate linear model will be the most accurate. To test this theory, we analyze the variance (using anova) between the singular and multivariate models.
+
+```{r multivariate, echo=FALSE}
+fit <- lm(mpg ~ am, data = mtcars) ## linear model mpg and transmission
+multi <- lm(mpg ~ am + wt + hp + cyl, data = mtcars) #multivariate linear model 
+anova(fit, multi) # analysis of variance
+```
+**Reviewing the results:**
+Based on anova, we can confirm that our second model, the multivariate will be the best fit due to the significant p-value, and we reject the null hypothesis that wt, hp, and cyl don't impact the outcome.
+
+```{r echo=FALSE}
+fitsummary <- summary(fit)
+multisumm <- summary(multi)
+intercept <- multisumm$coef[1]
+slope <- multisumm$coef[2]
+sigma <- multisumm$sigma
+rsquared <- multisumm$r.squared
+p_value <- multisumm$coef[1,2]
+multisumm$coef
+```
+**Results of the multivariate model:**
+(**Appendix; Figure 5**)
+The intercept `r myround(intercept, 2)` is the average miles per gallon for cars with automatic transmissions, the slope `r myround(slope, 2)` is the increased miles per gallon for manual transmissions. 
+The R Squared value tells us our model explains `r myround((rsquared *100), 2)`% of the total variance.
+Our p-value is `r myround(p_value, 2)`, (>.05) have to accept the null hypothesis - there are too many factors impacting the difference in MPG. 
+
+##Conclusion##
+
+Based on the observations of the multivariate regression model we see the following results:
+
+* Cars with manual transmissions get slightly higher miles per gallon compared to cars with automatic transmission. (1.81 miles per gallon adjusted by horsepower, cylinders, and weight).
+* Miles per gallon will decrease by 2.5 (adjusted by horsepower, cylinders, and transmission) for every 1000 pounds of increase in weight.
+* Miles per gallon decreases negligibly with increase of horsepower.
+* If number of cylinders are increased from 4 to 6 and 8, miles per gallon will decrease by a factor of 3 and 2.2 respectively (adjusted by horsepower, weight, and transmission type).
+
+Because of the impact of the confounders on the outcome, we cannot directly say if a manual transmission or automatic transmission is better as there are no vehicles to review that are equal in confounders so only miles per gallon can be assessed.
+
+##Assumptions##
+We would need to assume that all road tests were run in the same weather conditions, terrain, and with similar driving skills - therby not impacting outcome.
+
+## Appendix##
+**FIGURE 1** 
+
+```{r datatable, echo=FALSE, fig.width=7}
+kable(head(mtcars, table.attr='id="mtcars-table"'))
+```
+
+\newpage
+
+**FIGURE 2 **
+
+```{r boxplot, fig.height= 2, echo=FALSE}
+p <- ggplot(mtcars, aes(factor(am), mpg))
+p <- p + geom_boxplot(aes(fill = factor(am), alpha = 1/2)) 
+p <- p + labs(title = "MPG by Transmission Type") 
+p + labs(x = "Transmission Type", y = "Miles per Gallon")
+```
+
+**FIGURE 3 **
+
+```{r all, echo=FALSE, fig.height=3.5}
+plot(mtcars[,1:11])
+```
+
+**FIGURE 4a **
+
+```{r condcyl, echo=FALSE}
+coplot(mpg ~ cyl | am, data=mtcars)
+```
+
+\newpage
+
+**FIGURE 4b **
+
+```{r condhp, echo=FALSE}
+coplot(mpg ~ hp | am, data=mtcars)
+```
+
+
+**FIGURE 4c **
+
+```{r condwt, echo=FALSE}
+coplot(mpg ~ wt | am, data=mtcars)
+```
+
+\newpage
+
+**FIGURE 5 **
+
+```{r regs, echo=FALSE}
+par(mfrow = c(2,2))
+plot(multi)
+```
+**Figure 6 **
+
+```{r}
+sessionInfo() ## all libraries and tools used to create this report
+```
+
