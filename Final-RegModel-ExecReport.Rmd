@@ -26,7 +26,8 @@ Our focus:
 After performing exploratory data analysis, and using hypothesis testing and regression models, our multivariate model, accounting for the major confounders of weight, quantity of cylinders, and horsepower, show that cars with manual transmissions average 1.81 MPG more than cars with an automatic transmission, however, our p-value is greater than .05, indicating these results are not statistically significant and could be due to chance. 
 
 ## Data Processing ##
-We load the dataset and convert the necessary variables to factors for analysis.
+We load the dataset and convert the necessary variables to factors for analysis. (For complete code, see the RMD file here: https://github.com/kellisphere/RegressionModel/blob/master/Final-RegModel-ExecReport.Rmd)
+
 ```{r loaddata, echo=FALSE}
 data(mtcars)
 mtcars$cyl <- factor(mtcars$cyl)
